@@ -1,0 +1,54 @@
+{% load static %}
+<header>
+  {% if messages %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var message = "";
+      message = "{% for message in messages %} {{ message|escapejs }}\n  {% endfor %}";
+      if (message.trim() !== "") {
+        document.getElementById("modalMessage").innerText = message;
+        var myModal = new bootstrap.Modal(document.getElementById("messageModal"));
+        myModal.show();
+      }
+    });
+  </script>
+  {% endif %}
+</header>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalLabel">Notification</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="modalMessage"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar">
+  <span class="hamburger-btn material-symbols-rounded">menu</span>
+  <a href="#" class="logo">
+    <img src="{% static 'images/logo.jpg' %}" alt="logo" />
+    <h2>PrepareInterview</h2>
+  </a>
+  <ul class="links">
+    <span class="close-btn material-symbols-rounded">close</span>
+    <li><a href="{% url 'homepage' %}">Home</a></li>
+    <li class="dropdown">
+      <a href="{% url 'main_prompt' %}">Prompt ▼</a>
+      <ul class="dropdown-menu">
+        <li><a href="{% url 'cv_based' %}">CV Based</a></li>
+        <li><a href="{% url 'open_ai_prompt' %}">Open AI</a></li>
+        <li><a href="{% url 'prompt' %}">Generic</a></li>
+      </ul>
+    </li>
+    <li><a href="{% url 'about' %}">About us</a></li>
+    <li><a href="{% url 'contact' %}">Contact us</a></li>
+  </ul>
+  <button class="login-btn">LOG IN</button>
+</nav>

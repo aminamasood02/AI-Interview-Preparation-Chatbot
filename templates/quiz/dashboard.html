@@ -1,0 +1,672 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Dashboard - PrepareInterview</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        /* Base Cyber Theme */
+        :root {
+            --primary: #6e42ff;
+            --secondary: #00c2ff;
+            --accent: #ff00e5;
+            --dark: #0a0a1a;
+            --darker: #050510;
+            --light: #ffffff;
+            --glow-primary: 0 0 15px rgba(110, 66, 255, 0.7);
+            --glow-secondary: 0 0 15px rgba(0, 194, 255, 0.7);
+            --glow-accent: 0 0 15px rgba(255, 0, 229, 0.7);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a0b2e, #0d0221);
+            color: var(--light);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Canvas for 3D background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        /* Cyber grid background */
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(110, 66, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 66, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(10, 10, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(110, 66, 255, 0.3);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            color: var(--light);
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover {
+            color: var(--secondary);
+            background: rgba(0, 194, 255, 0.1);
+            box-shadow: var(--glow-secondary);
+        }
+
+        /* Dashboard Container */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .dashboard-title h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 20px rgba(110, 66, 255, 0.5);
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(10, 10, 26, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(110, 66, 255, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(110, 66, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s ease;
+            opacity: 0;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+            animation: shimmer 1.5s ease-in-out;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--glow-primary);
+            border-color: var(--primary);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 229, 0.5));
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--light);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Domain Cards */
+        .domains-section {
+            background: rgba(10, 10, 26, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(110, 66, 255, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--light);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .domain-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .domain-card {
+            background: rgba(5, 5, 16, 0.8);
+            border: 1px solid rgba(0, 194, 255, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .domain-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 194, 255, 0.1), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .domain-card:hover::before {
+            left: 100%;
+        }
+
+        .domain-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--glow-secondary);
+            border-color: var(--secondary);
+        }
+
+        .domain-icon {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+        }
+
+        .domain-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--light);
+            margin-bottom: 0.5rem;
+        }
+
+        .domain-description {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.4;
+        }
+
+        /* Recent Activity */
+        .recent-section {
+            background: rgba(10, 10, 26, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(110, 66, 255, 0.3);
+            border-radius: 15px;
+            padding: 2rem;
+        }
+
+        .recent-quiz {
+            background: rgba(5, 5, 16, 0.8);
+            border: 1px solid rgba(255, 0, 229, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .recent-quiz:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(255, 0, 229, 0.3);
+        }
+
+        .quiz-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .quiz-name {
+            font-weight: 600;
+            color: var(--light);
+        }
+
+        .quiz-score {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .grade-A, .grade-Aplus { background: linear-gradient(90deg, #28a745, #20c997); }
+        .grade-B { background: linear-gradient(90deg, #17a2b8, #6f42c1); }
+        .grade-C { background: linear-gradient(90deg, #ffc107, #fd7e14); color: #000; }
+        .grade-D { background: linear-gradient(90deg, #fd7e14, #dc3545); }
+        .grade-F { background: linear-gradient(90deg, #dc3545, #6f42c1); }
+
+        .quiz-date {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: var(--light);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-primary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--secondary);
+            border: 1px solid var(--secondary);
+        }
+
+        .btn-outline:hover {
+            background: var(--secondary);
+            color: var(--dark);
+            box-shadow: var(--glow-secondary);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        /* Animations */
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(110, 66, 255, 0.5)); }
+            50% { filter: drop-shadow(0 0 20px rgba(110, 66, 255, 0.8)); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-title h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- Cyber Grid -->
+    <div class="cyber-grid"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="dashboard-container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="{% url 'homepage' %}" class="nav-brand">
+                    <i class="fas fa-cube"></i>
+                    PrepareInterview
+                </a>
+                <nav class="nav-links">
+                    <a href="{% url 'homepage' %}" class="nav-link">
+                        <i class="fas fa-home"></i>Home
+                    </a>
+                    <a href="{% url 'quiz_history' %}" class="nav-link">
+                        <i class="fas fa-history"></i>History
+                    </a>
+                    <a href="{% url 'logout' %}" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i>Logout
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <!-- Title -->
+        <div class="dashboard-title">
+            <h1>Quiz Dashboard for {{ request.user.email }}</h1>
+            <p class="dashboard-subtitle">Track your learning progress and challenge yourself with AI-generated quizzes!</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-clipboard-list stat-icon"></i>
+                <div class="stat-number">{{ total_sessions }}</div>
+                <div class="stat-label">Total Quizzes</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle stat-icon"></i>
+                <div class="stat-number">{{ completed_sessions }}</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-star stat-icon"></i>
+                <div class="stat-number">{{ avg_score }}%</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-trophy stat-icon"></i>
+                <div class="stat-number">{{ domain_stats|length }}</div>
+                <div class="stat-label">Domains Tried</div>
+            </div>
+        </div>
+
+        <!-- Quiz Performance Bar Chart -->
+        <div style="margin-bottom: 3rem; background: rgba(10, 10, 26, 0.6); border: 1px solid rgba(0, 194, 255, 0.3); border-radius: 15px; padding: 2rem;">
+            <h3 class="section-title" style="margin-bottom: 2rem;">
+                <i class="fas fa-chart-bar"></i>
+                Quiz Performance Chart (Updated Quizes)
+            </h3>
+            <canvas id="quizChart" style="width: 100%; max-width: 800px; margin: auto;"></canvas>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Available Domains -->
+            <div class="domains-section">
+                <h3 class="section-title">
+                    <i class="fas fa-code"></i>
+                    Available Quiz Domains
+                </h3>
+                <div class="domain-grid">
+                    {% for domain in domains %}
+                    <div class="domain-card" onclick="location.href='{% url 'quiz_setup' domain.id %}'">
+                        <i class="{{ domain.icon }} domain-icon"></i>
+                        <div class="domain-name">{{ domain.display_name }}</div>
+                        <div class="domain-description">{{ domain.description|truncatewords:12 }}</div>
+                    </div>
+                    {% empty %}
+                    <div style="grid-column: 1/-1; text-align: center; color: rgba(255,255,255,0.6); padding: 2rem;">
+                        <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>No quiz domains available at the moment.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-section">
+                <h3 class="section-title">
+                    <i class="fas fa-clock"></i>
+                    Recent Activity
+                </h3>
+                {% for session in recent_sessions %}
+                <div class="recent-quiz">
+                    <div class="quiz-info">
+                        <span class="quiz-name">{{ session.quiz.domain.display_name }}</span>
+                        {% if session.status == 'completed' %}
+                        <span class="quiz-score grade-{{ session.get_grade }}">{{ session.percentage|floatformat:0 }}%</span>
+                        {% else %}
+                        <span class="quiz-score" style="background: #6c757d;">In Progress</span>
+                        {% endif %}
+                    </div>
+                    <div class="quiz-date">{{ session.started_at|date:"M d, Y" }}</div>
+                </div>
+                {% empty %}
+                <div style="text-align: center; color: rgba(255,255,255,0.6); padding: 2rem;">
+                    <i class="fas fa-clipboard" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>No quiz history yet. Start your first quiz!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'quiz_domain_selection' %}" class="btn btn-primary">
+                <i class="fas fa-play"></i>
+                Start New Quiz
+            </a>
+            <a href="{% url 'quiz_history' %}" class="btn btn-outline">
+                <i class="fas fa-history"></i>
+                View All History
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Three.js background (same as homepage)
+        function initThreeBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            const renderer = new THREE.WebGLRenderer({
+                canvas,
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            // Create particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 100;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x6e42ff,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            
+            camera.position.z = 20;
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                particlesMesh.rotation.x += 0.001;
+                particlesMesh.rotation.y += 0.001;
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initThreeBackground);
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('quizChart').getContext('2d');
+        const quizChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ quiz_labels|safe }},
+                datasets: [{
+                    label: 'Quiz Score (%)',
+                    data: {{ percentages|safe }},
+                    backgroundColor: 'rgba(0, 194, 255, 0.6)',
+                    borderColor: 'rgba(0, 194, 255, 1)',
+                    borderWidth: 2,
+                    borderRadius: 5,
+                    hoverBackgroundColor: 'rgba(110, 66, 255, 0.9)',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#fff'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.1)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Percentage (%)',
+                            color: '#fff'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#fff'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.05)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Quiz Number',
+                            color: '#fff'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <!-- CSRF Token for AJAX requests -->
+    {% csrf_token %}
+    
+    <!-- Include Chat Support Widget -->
+    {% include 'chat_support.html' %}
+</body>
+</html>

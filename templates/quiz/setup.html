@@ -1,0 +1,562 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Setup - {{ domain.display_name }} - PrepareInterview</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Base Cyber Theme */
+        :root {
+            --primary: #6e42ff;
+            --secondary: #00c2ff;
+            --accent: #ff00e5;
+            --dark: #0a0a1a;
+            --darker: #050510;
+            --light: #ffffff;
+            --glow-primary: 0 0 15px rgba(110, 66, 255, 0.7);
+            --glow-secondary: 0 0 15px rgba(0, 194, 255, 0.7);
+            --glow-accent: 0 0 15px rgba(255, 0, 229, 0.7);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a0b2e, #0d0221);
+            color: var(--light);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Canvas for 3D background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        /* Cyber grid background */
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(110, 66, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(110, 66, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Back Button */
+        .back-btn {
+            background: rgba(10, 10, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(110, 66, 255, 0.3);
+            color: var(--light);
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            color: var(--secondary);
+            border-color: var(--secondary);
+            box-shadow: var(--glow-secondary);
+            transform: translateY(-2px);
+        }
+
+        /* Setup Card */
+        .setup-card {
+            background: rgba(10, 10, 26, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(110, 66, 255, 0.3);
+            border-radius: 15px;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .setup-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(110, 66, 255, 0.05), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 4s ease-in-out infinite;
+        }
+
+        /* Header */
+        .domain-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .domain-icon {
+            font-size: 4rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 229, 0.5));
+        }
+
+        .domain-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .domain-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+
+        /* Section Headers */
+        .section-header {
+            color: var(--light);
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header i {
+            color: var(--secondary);
+        }
+
+        /* Difficulty Options */
+        .difficulty-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .difficulty-option {
+            background: rgba(5, 5, 16, 0.8);
+            border: 2px solid rgba(0, 194, 255, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .difficulty-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 194, 255, 0.1), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .difficulty-option:hover::before {
+            left: 100%;
+        }
+
+        .difficulty-option:hover {
+            border-color: var(--secondary);
+            box-shadow: var(--glow-secondary);
+            transform: translateY(-3px);
+        }
+
+        .difficulty-option.selected {
+            border-color: var(--accent);
+            background: rgba(255, 0, 229, 0.1);
+            box-shadow: var(--glow-accent);
+        }
+
+        .difficulty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .difficulty-easy .difficulty-icon { color: #28a745; }
+        .difficulty-medium .difficulty-icon { color: #ffc107; }
+        .difficulty-hard .difficulty-icon { color: #dc3545; }
+
+        .difficulty-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--light);
+            margin-bottom: 0.5rem;
+        }
+
+        .difficulty-desc {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .form-select {
+            background: rgba(5, 5, 16, 0.8);
+            border: 2px solid rgba(0, 194, 255, 0.3);
+            color: var(--light);
+            border-radius: 10px;
+            padding: 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            border-color: var(--secondary);
+            box-shadow: var(--glow-secondary);
+            outline: none;
+        }
+
+        .form-select option {
+            background: var(--dark);
+            color: var(--light);
+        }
+
+        .form-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-info i {
+            color: var(--accent);
+        }
+
+        /* Generate Button */
+        .generate-section {
+            text-align: center;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-generate {
+            background: linear-gradient(90deg, var(--accent), #ff6b9d);
+            border: none;
+            border-radius: 10px;
+            padding: 1.2rem 3rem;
+            color: var(--light);
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--glow-accent);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .loading-spinner i {
+            font-size: 2rem;
+            color: var(--secondary);
+            animation: spin 1s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .difficulty-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .domain-title {
+                font-size: 2rem;
+            }
+            
+            .setup-card {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- Cyber Grid -->
+    <div class="cyber-grid"></div>
+
+    <div class="container">
+        <!-- Back Button -->
+        <a href="{% url 'quiz_domain_selection' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Domains
+        </a>
+
+        <div class="setup-card">
+            <!-- Header -->
+            <div class="domain-header">
+                <i class="{{ domain.icon }} domain-icon"></i>
+                <h2 class="domain-title">{{ domain.display_name }} Quiz Setup</h2>
+                <p class="domain-description">{{ domain.description }}</p>
+            </div>
+
+            <form method="post" id="quizSetupForm">
+                {% csrf_token %}
+                
+                <!-- Difficulty Selection -->
+                <div class="form-group">
+                    <h5 class="section-header">
+                        <i class="fas fa-chart-line"></i>Select Difficulty Level
+                    </h5>
+                    <div class="difficulty-grid">
+                        <div class="difficulty-option difficulty-easy" data-difficulty="easy">
+                            <i class="fas fa-seedling difficulty-icon"></i>
+                            <div class="difficulty-title">Easy</div>
+                            <div class="difficulty-desc">Basic concepts and fundamentals</div>
+                        </div>
+                        <div class="difficulty-option difficulty-medium selected" data-difficulty="medium">
+                            <i class="fas fa-mountain difficulty-icon"></i>
+                            <div class="difficulty-title">Medium</div>
+                            <div class="difficulty-desc">Intermediate level questions</div>
+                        </div>
+                        <div class="difficulty-option difficulty-hard" data-difficulty="hard">
+                            <i class="fas fa-fire difficulty-icon"></i>
+                            <div class="difficulty-title">Hard</div>
+                            <div class="difficulty-desc">Advanced and challenging</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="difficulty" id="difficultyInput" value="medium">
+                </div>
+
+                <!-- Number of Questions -->
+                <div class="form-group">
+                    <h5 class="section-header">
+                        <i class="fas fa-list-ol"></i>Number of Questions
+                    </h5>
+                    <div class="form-row">
+                        <select class="form-select" name="num_questions" id="numQuestions">
+                            <option value="5">5 Questions (Quick)</option>
+                            <option value="10" selected>10 Questions (Standard)</option>
+                            <option value="15">15 Questions (Extended)</option>
+                            <option value="20">20 Questions (Comprehensive)</option>
+                            <option value="25">25 Questions (Challenge)</option>
+                        </select>
+                        <div class="form-info">
+                            <i class="fas fa-info-circle"></i>
+                            More questions = better assessment
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Limit -->
+                <div class="form-group">
+                    <h5 class="section-header">
+                        <i class="fas fa-clock"></i>Time Limit
+                    </h5>
+                    <div class="form-row">
+                        <select class="form-select" name="time_limit" id="timeLimit">
+                            <option value="10">10 Minutes</option>
+                            <option value="15" selected>15 Minutes</option>
+                            <option value="20">20 Minutes</option>
+                            <option value="30">30 Minutes</option>
+                            <option value="45">45 Minutes</option>
+                            <option value="60">60 Minutes</option>
+                        </select>
+                        <div class="form-info">
+                            <i class="fas fa-stopwatch"></i>
+                            Choose based on question count
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="generate-section">
+                    <button type="submit" class="btn-generate" id="generateBtn">
+                        <i class="fas fa-magic"></i>
+                        Generate AI Quiz
+                    </button>
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <i class="fas fa-spinner"></i>
+                        <p>Generating your personalized quiz...</p>
+                        <small>This may take a few moments</small>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Three.js background
+        function initThreeBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            const renderer = new THREE.WebGLRenderer({
+                canvas,
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            // Create particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 100;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x6e42ff,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            
+            camera.position.z = 20;
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                particlesMesh.rotation.x += 0.001;
+                particlesMesh.rotation.y += 0.001;
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Difficulty selection
+        document.querySelectorAll('.difficulty-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('difficultyInput').value = this.dataset.difficulty;
+            });
+        });
+
+        // Form submission with loading state
+        document.getElementById('quizSetupForm').addEventListener('submit', function(e) {
+            const generateBtn = document.getElementById('generateBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            generateBtn.style.display = 'none';
+            loadingSpinner.classList.add('active');
+            
+            // Disable form elements
+            document.querySelectorAll('.difficulty-option, .form-select').forEach(el => {
+                el.style.pointerEvents = 'none';
+                el.style.opacity = '0.6';
+            });
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initThreeBackground);
+    </script>
+
+    <!-- CSRF Token for AJAX requests -->
+    {% csrf_token %}
+    
+    <!-- Include Chat Support Widget -->
+    {% include 'chat_support.html' %}
+</body>
+</html> 
